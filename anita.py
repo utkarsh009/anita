@@ -667,10 +667,7 @@ class multifile(object):
 class Anita:
     def __init__(self, dist, workdir = None, vmm = 'qemu', vmm_args = None,
         disk_size = None, memory_size = None, persist = False, boot_from = None,
-	structured_log = None, structured_log_file = None, no_install = False, tests = 'atf', prefix = "", dtb_path = None):
-        dtb_counter = 1
-        if not dtb_path:
-            dtb_counter = 0
+	structured_log = None, structured_log_file = None, no_install = False, tests = 'atf', dtb = ''):
         self.dist = dist
         if workdir:
             self.workdir = workdir
@@ -731,7 +728,7 @@ class Anita:
             vmm_args = []
 	if dist.arch() == 'evbarm-earmv7hf':
             vmm_args += ['-M', 'vexpress-a15', '-kernel', os.path.join(self.workdir, 'netbsd-VEXPRESS_A15.ub'),
-            '-append', "root=ld0a", '-dtb', (os.path.join(prefix, 'share', 'dtb', 'arm', 'vexpress-v2p-ca15-tc1.dtb'), dtb_path)[dtb_counter]]
+            '-append', "root=ld0a", '-dtb', dtb]
         self.extra_vmm_args = vmm_args
 
 	self.is_logged_in = False

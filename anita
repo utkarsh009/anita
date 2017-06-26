@@ -14,7 +14,7 @@ def main(argv = None):
     if argv is None:
         argv = sys.argv
 
-    prefix_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    dtb_path = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'share', 'dtb', 'arm', 'vexpress-v2p-ca15-tc1.dtb')
     parser = optparse.OptionParser(
         usage = "usage: %prog [options] install|boot|interact distribution")
     parser.add_option("--workdir",
@@ -58,7 +58,7 @@ def main(argv = None):
     parser.add_option("--version", action="store_true",
 		      help="print the anita version number and exit")
     parser.add_option("--tests", help='select the tests to run in test mode: \"atf\" or \"kyua\"', type="string", default="atf")
-    parser.add_option("--dtb-path", help='Enter path to the Device Tree Blob (.dtb)', type="string", default='')
+    parser.add_option("--dtb", help='use the Device Tree Blob (.dtb) PATH_TO_DTB', type="string", metavar="PATH_TO_DTB", default=dtb_path)
 
     (options, args) = parser.parse_args()
 
@@ -91,11 +91,8 @@ def main(argv = None):
     else:
 	raise Usage("expected distribution URL or directory, got " + distarg)
     if dist.arch() == 'evbarm-earmv7hf':
-        if not (os.path.exists(options.dtb_path) or os.path.exists(os.path.join(prefix_path, 'share', 'dtb', 'arm', 'vexpress-v2p-ca15-tc1.dtb'))):
-            print "The Device Tree Blob does not exist in the default path. Please enter the path here or re-run anita and specify an alternative path using the option '--prefix <path_to_dtb>'"
-            options.dtb_path = raw_input("Path to .dtb: ")
-            if not os.path.exists(options.dtb_path):
-                raise IOError("The specified file does not exist.")
+        if not os.path.exists(options.dtb):
+            raise IOError("The Device Tree Blob %s does not exist." % options.dtb)
 
     a = anita.Anita(dist,
         workdir = options.workdir,
@@ -108,9 +105,8 @@ def main(argv = None):
 	structured_log = options.structured_log,
 	structured_log_file = options.structured_log_file,
 	no_install = options.no_install,
-	tests = options.tests,
-	prefix = prefix_path,
-    dtb_path = options.dtb_path
+    tests = options.tests,
+    dtb = options.dtb
 	)
 
     def maybe_run_command(a):

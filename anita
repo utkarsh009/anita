@@ -105,8 +105,8 @@ def main(argv = None):
 	structured_log = options.structured_log,
 	structured_log_file = options.structured_log_file,
 	no_install = options.no_install,
-       tests = options.tests,
-       dtb = options.dtb
+        tests = options.tests,
+        dtb = options.dtb
 	)
 
     def maybe_run_command(a):

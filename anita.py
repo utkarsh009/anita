@@ -23,11 +23,12 @@ __version__='1.41'
 netbsd_mirror_url = "ftp://ftp.netbsd.org/pub/NetBSD/"
 #netbsd_mirror_url = "ftp://ftp.fi.NetBSD.org/pub/NetBSD/"
 
-arch_qemu_map = {
+arch_map = {
     'i386': 'qemu-system-i386',
     'amd64': 'qemu-system-x86_64',
     'sparc': 'qemu-system-sparc',
     'evbarm-earmv7hf': 'qemu-system-arm',
+    'pmax': 'gxemul',
      # The following ones don't actually work
     'sparc64': 'qemu-system-sparc64',
     'macppc': 'qemu-system-ppc',
@@ -212,7 +213,7 @@ def dir2url(dir):
     return "".join(chars)
 
 def check_arch_supported(arch, dist_type):
-    if arch_qemu_map.get(arch) is None:
+    if arch_map.get(arch) is None:
         raise RuntimeError(("'%s' is not the name of a " + \
         "supported NetBSD port") % arch)
     if (arch == 'i386' or arch == 'amd64') and dist_type != 'reltree':
@@ -708,7 +709,7 @@ class Anita:
         self.boot_from = boot_from
         self.no_install = no_install
 
-        self.qemu = arch_qemu_map.get(dist.arch())
+        self.qemu = arch_map.get(dist.arch())
         if self.qemu is None:
             raise RuntimeError("NetBSD port '%s' is not supported" %
                 dist.arch())
@@ -726,6 +727,8 @@ class Anita:
 
         if vmm_args is None:
             vmm_args = []
+        if self.dist.arch() == 'pmax':
+            vmm_args += ["-e3max"]
         if dist.arch() == 'evbarm-earmv7hf':
             vmm_args += ['-M', 'vexpress-a15', '-kernel', os.path.join(self.workdir, 'netbsd-VEXPRESS_A15.ub'),
             '-append', "root=ld0a", '-dtb', dtb]
@@ -775,6 +778,12 @@ class Anita:
         child.delayafterterminate = 30.0
         self.child = child
 
+    def start_gxemul(self, vmm_args):
+        child = self.pexpect_spawn(self.qemu, ["-M", str(self.memory_megs()) + 'M', "-d", os.path.abspath(self.wd0_path()),
+         os.path.abspath(os.path.join(self.dist.download_local_arch_dir(), "binary", "kernel",
+         ("netbsd-INSTALL.gz", "netbsd-GENERIC.gz")[self.no_install]))] + vmm_args + self.extra_vmm_args)
+        self.configure_child(child)
+        return child
     def start_qemu(self, vmm_args, snapshot_system_disk):
         # Log the qemu version to stdout
         subprocess.call([self.qemu, '--version'])
@@ -799,6 +808,10 @@ class Anita:
 
     def qemu_cdrom_args(self, path, devno):
         return ["-drive", "file=%s,format=raw,media=cdrom,readonly=on" % (path)]
+    def gxemul_cdrom_args(self):
+        return self.dist.iso_path()
+    def gxemul_disk_args(self, path):
+        return ["-d", path]
 
     def string_arg(self, name, value):
         if self.vmm == 'xm':
@@ -940,6 +953,12 @@ class Anita:
             child = self.start_qemu(vmm_args, snapshot_system_disk = False)
         elif self.vmm == 'noemu':
             child = self.start_noemu(['--boot-from', 'net'])
+        elif self.vmm == 'gxemul':
+            cd_device = 'cd0a'
+            vmm_args = []
+            if not self.no_install:
+                vmm_args += ["-d", self.gxemul_cdrom_args()]
+            child = self.start_gxemul(vmm_args)
         else:
             raise RuntimeError('unknown vmm %s' % self.vmm)
 
@@ -1532,6 +1551,8 @@ class Anita:
 
         if not self.no_install:
             self.install()
+        if self.vmm == 'gxemul':
+            self.no_install = True
 
         if self.vmm == 'qemu':
             child = self.start_qemu(vmm_args, snapshot_system_disk = not self.persist)
@@ -1542,6 +1563,8 @@ class Anita:
                              "binary", "kernel", self.dist.xen_kernel())))])
         elif self.vmm == 'noemu':
             child = self.start_noemu(vmm_args + ['--boot-from', 'disk'])
+        elif self.vmm == 'gxemul':
+            child = self.start_gxemul(vmm_args)
         else:
             raise RuntimeError('unknown vmm %s' % vmm)
         self.child = child
@@ -1588,6 +1611,8 @@ class Anita:
             scratch_disk_args = self.qemu_disk_args(os.path.abspath(scratch_disk_path), 1, True, False)
         elif self.vmm == 'noemu':
             scratch_disk_args = []
+        elif self.vmm == 'gxemul':
+            scratch_disk_args = self.gxemul_disk_args(os.path.abspath(scratch_disk_path))
         else:
             raise RuntimeError('unknown vmm')
 

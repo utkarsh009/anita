@@ -779,9 +779,9 @@ class Anita:
         self.child = child
 
     def start_gxemul(self, vmm_args):
-        child = self.pexpect_spawn(self.qemu, ["-M", str(self.memory_megs()) + 'M', "-d", os.path.abspath(self.wd0_path()),
-         os.path.abspath(os.path.join(self.dist.download_local_arch_dir(), "binary", "kernel",
-         ("netbsd-INSTALL.gz", "netbsd-GENERIC.gz")[self.no_install]))] + vmm_args + self.extra_vmm_args)
+        child = self.pexpect_spawn(self.qemu, ["-M", str(self.memory_megs()) + 'M', "-d", os.path.abspath(self.wd0_path())]
+         + vmm_args + self.extra_vmm_args + [os.path.abspath(os.path.join(self.dist.download_local_arch_dir(),
+         "binary", "kernel", ("netbsd-INSTALL.gz", "netbsd-GENERIC.gz")[self.no_install]))])
         self.configure_child(child)
         return child
     def start_qemu(self, vmm_args, snapshot_system_disk):

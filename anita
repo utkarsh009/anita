@@ -21,7 +21,7 @@ def main(argv = None):
                       help="store work files in DIR", metavar="DIR")
     parser.add_option("--vmm",
                       help="use VMM (qemu or xen) as the virtual machine monitor",
-                      metavar="VMM", default="qemu")
+                      metavar="VMM")
     parser.add_option("--vmm-args",
                       help="pass ARGS as extra arguments to virtual machine monitor",
                       metavar="ARGS", default="")

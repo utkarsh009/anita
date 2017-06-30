@@ -23,16 +23,16 @@ __version__='1.41'
 netbsd_mirror_url = "ftp://ftp.netbsd.org/pub/NetBSD/"
 #netbsd_mirror_url = "ftp://ftp.fi.NetBSD.org/pub/NetBSD/"
 
-arch_map = {
+arch_qemu_map = {
     'i386': 'qemu-system-i386',
     'amd64': 'qemu-system-x86_64',
     'sparc': 'qemu-system-sparc',
     'evbarm-earmv7hf': 'qemu-system-arm',
-    'pmax': 'gxemul',
      # The following ones don't actually work
     'sparc64': 'qemu-system-sparc64',
     'macppc': 'qemu-system-ppc',
 }
+arch_gxemul_list = ['pmax']
 
 # External commands we rely on
 
@@ -213,7 +213,7 @@ def dir2url(dir):
     return "".join(chars)
 
 def check_arch_supported(arch, dist_type):
-    if arch_map.get(arch) is None:
+    if arch_qemu_map.get(arch) is None and not arch in arch_gxemul_list:
         raise RuntimeError(("'%s' is not the name of a " + \
         "supported NetBSD port") % arch)
     if (arch == 'i386' or arch == 'amd64') and dist_type != 'reltree':
@@ -699,7 +699,7 @@ class Anita:
 
         # Set the default memory size if none was given.
         if memory_size is None:
-            if dist.arch() in ['amd64', 'evbarm-earmv7hf']:
+            if dist.arch() in ['amd64', 'evbarm-earmv7hf', 'pmax']:
                 memory_size = "128M"
             else:
                 memory_size = "32M"
@@ -709,8 +709,8 @@ class Anita:
         self.boot_from = boot_from
         self.no_install = no_install
 
-        self.qemu = arch_map.get(dist.arch())
-        if self.qemu is None:
+        self.qemu = arch_qemu_map.get(dist.arch())
+        if self.qemu is None and not self.dist.arch() in arch_gxemul_list:
             raise RuntimeError("NetBSD port '%s' is not supported" %
                 dist.arch())
 
@@ -722,6 +722,8 @@ class Anita:
         # Backwards compatibility
         if vmm == 'xen':
             vmm = 'xm'
+        if self.dist.arch() in arch_gxemul_list:
+            vmm = 'gxemul'
 
         self.vmm = vmm
 
@@ -779,7 +781,7 @@ class Anita:
         self.child = child
 
     def start_gxemul(self, vmm_args):
-        child = self.pexpect_spawn(self.qemu, ["-M", str(self.memory_megs()) + 'M', "-d", os.path.abspath(self.wd0_path())]
+        child = self.pexpect_spawn('gxemul', ["-M", str(self.memory_megs()) + 'M', "-d", os.path.abspath(self.wd0_path())]
          + vmm_args + self.extra_vmm_args + [os.path.abspath(os.path.join(self.dist.download_local_arch_dir(),
          "binary", "kernel", ("netbsd-INSTALL.gz", "netbsd-GENERIC.gz")[self.no_install]))])
         self.configure_child(child)

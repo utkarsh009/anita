@@ -811,14 +811,26 @@ class Anita:
     def start_uae(self, vmm_args = []):
         f = open(os.path.join(self.workdir, 'netbsd.uae'), 'w')
         f.write('kickstart_rom_file=/path/to/kickstart\n' +
-                'kbd_lang=us\n' + 'gfx_linemode=double\n' + 'sound_output=interrupts\n' +
-                'sound_channels=stereo\n' + 'sound_max_buff=44100\n' + 'cpu_type=68040\n' +
-                'cpu_speed=30' + 'cpu_compatible=false' + 'nr_floppies=1' + 'rtc=a3000\n' +
-                'wdc=both\n' + 'z3mem_size=1024\n' +
+                'kbd_lang=us\n' +
+                'gfx_linemode=double\n' +
+                'sound_output=interrupts\n' +
+                'sound_channels=stereo\n' +
+                'sound_max_buff=44100\n' +
+                'cpu_type=68040\n' +
+                'cpu_speed=30' +
+                'cpu_compatible=false' +
+                'nr_floppies=1' +
+                'rtc=a3000\n' +
+                'wdc=both\n' +
+                'z3mem_size=1024\n' +
                 'wdcfile=rw,32,16,0,512,' + self.wd0_path() + '\n' +
                 '\n'.join(vmm_args) + '\n' +
-                'ethercard=false\n' + 'gmtime=true\n' + 'use_gui=no\n' + 'vnc_screen=0\n' +
-                'vnc_password=\n' + 'vnc_viewonly=ok')
+                'ethercard=false\n' +
+                'gmtime=true\n' +
+                'use_gui=no\n' +
+                'vnc_screen=0\n' +
+                'vnc_password=\n' +
+                'vnc_viewonly=ok')
         f.close()
         child = self.pexpect_spawn('uae', [os.path.join(self.workdir, 'netbsd.uae')])
         self.configure_child(child)
@@ -925,7 +937,7 @@ class Anita:
         self.configure_child(child)
         return child
 
-    def _install_amiga(self):
+    def install_amiga(self):
         print "Creating hard disk image...",
         sys.stdout.flush()
         spawn('dd',['dd', 'if=/dev/zero', 'of=' + self.wd0_path, 'bs=512', 'count=2000000'])
@@ -934,16 +946,18 @@ class Anita:
         wd1_path = os.path.join(self.workdir, 'wd1.img')
         spawn('dd',['dd', 'if=/dev/zero', 'of=' + wd1_path, 'bs=512', 'count=2000000'])
         rdb_conf = os.path.join(self.workdir,'rdbedit.conf')
-        f = open(rdb_conf, 'w')
+        f = open(rdb_conf, 'w+')
         f.write('c3 7000\n' + 'p3\n' + 'nmini\n' + 'fbootable\n' + 'o16\n' + 'tNBR\\7\n' + 'q\n' +
                 'c4 8624\n' + 'p4\n' + 'nsets\n' + 'o16\n' + 'tNBU\\12\n' + 'q\n' + 'q\n' + 'Y\n')
+        f.seek(0)
+        subprocess.Popen(['rdbedit', '-Fies 2', wd1_path], stdin=f)
         f.close()
-        spawn('rdbedit',['rdbedit', '-Fies 2', wd1_path, '<', rdb_conf])
-        f = open(rdb_conf, 'w')
+        f = open(rdb_conf, 'w+')
         f.write('c3 7000\n' + 'p3\n' + 'nroot\n' + 'fbootable\n' + 'o16\n' +
                 'tNBR\\7\n' + 'q\n' + 'q\n' + 'Y\n')
+        f.seek(0)
+        subprocess.Popen(['rdbedit', '-Fies 2', self.wd0_path()], stdin=f)
         f.close()
-        spawn('rdbedit',['rdbedit', '-Fies 2', self.wd0_path(), '<', rdb_conf])
         self.dist.make_iso()
         miniroot_fn = os.path.join(self.workdir, 'installation', 'miniroot', 'miniroot.fs.gz')
         if os.path.exists(miniroot_fn):
@@ -1039,7 +1053,7 @@ class Anita:
         os.unlink(rdb_conf)
         self.dist.cleanup()
 
-    def _install(self):
+    def install_sysinst(self):
         # Download or build the install ISO
         self.dist.set_workdir(self.workdir)
         if self.dist.arch() == 'evbarm-earmv7hf':
@@ -1730,9 +1744,9 @@ class Anita:
                 return
             try:
                 if self.dist.arch() == 'amiga':
-                    self._install_amiga()
+                    self.install_amiga()
                 else:
-                    self._install()
+                    self.install_sysinst()
             except:
                 if os.path.exists(self.wd0_path()):
                     os.unlink(self.wd0_path())

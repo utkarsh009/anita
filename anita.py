@@ -746,6 +746,8 @@ class Anita:
             vmm = 'qemu'
         elif self.dist.arch() in arch_simh_list:
             vmm = 'simh'
+        elif self.vmm in arch_uae_list:
+            vmm = 'uae'
         else:
             vmm = 'gxemul'
 
@@ -968,7 +970,7 @@ class Anita:
             spawn('installboot',['installboot', '-m amiga', '-o command="netbsd -Cc 4000"', bootblock, bootxx])
             spawn('dd',['dd', 'if=' + bootblock, 'of=' + wd1_path, 'oseek=128', 'conv=osync,notrunc'])
             subprocess.call('zcat ' + miniroot_fn + ' | dd of=' + self.wd0_path() + ' oseek=144' + ' skip=16' + ' conv=osync,notrunc', shell = True)
-        spawn('dd', ['dd', 'if=' + self.dist.iso_path, 'of=' + wd1_path, ' oseek=896128' + ' conv=osync,notrunc', shell = True])
+        spawn('dd', ['dd', 'if=' + self.dist.iso_path, 'of=' + wd1_path, ' oseek=896128' + ' conv=osync,notrunc'])
         vmm_args = ['wdcfile=rw,32,16,0,512,' + wd1_path]
         child = self.start_uae(vmm_args)
         loop = 0
@@ -1822,6 +1824,8 @@ class Anita:
             child = self.start_simh(vmm_args)
             child.expect(">>>")
             child.send("boot dua0\r\n")
+        elif self.vmm == 'uae':
+            child = self.start_uae(vmm_args)
         else:
             raise RuntimeError('unknown vmm %s' % vmm)
         self.child = child
@@ -1872,6 +1876,8 @@ class Anita:
             scratch_disk_args = self.gxemul_disk_args(os.path.abspath(scratch_disk_path))
         elif self.vmm == 'simh':
             scratch_disk_args = ['set rq1 ra92', 'attach rq1 ' + scratch_disk_path]
+        elif self.vmm == 'uae':
+            scratch_disk_args = ['wdcfile=rw,32,16,0,512,' + scratch_disk_path]
         else:
             raise RuntimeError('unknown vmm')
 

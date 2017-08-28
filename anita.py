@@ -834,7 +834,7 @@ class Anita:
                 'vnc_password=\n' +
                 'vnc_viewonly=ok')
         f.close()
-        child = self.pexpect_spawn('uae', [os.path.join(self.workdir, 'netbsd.uae')])
+        child = self.pexpect_spawn('uae', ['-f', os.path.join(self.workdir, 'netbsd.uae'), '-I', ''])
         self.configure_child(child)
         return child
     def start_simh(self, vmm_args = []):
@@ -956,7 +956,7 @@ class Anita:
         subprocess.Popen(['rdbedit', '-Fies 2', wd1_path], stdin=f)
         f.close()
         f = open(rdb_conf, 'w+')
-        f.write('c3 7000\n' + 'p3\n' + 'nroot\n' + 'fbootable\n' + 'o16\n' +
+        f.write('c3 15624\n' + 'p3\n' + 'nroot\n' + 'fbootable\n' + 'o16\n' +
                 'tNBR\\7\n' + 'q\n' + 'q\n' + 'Y\n')
         f.seek(0)
         subprocess.Popen(['rdbedit', '-Fies 2', self.wd0_path()], stdin=f)

@@ -968,9 +968,9 @@ class Anita:
             os.spawn('dd',['dd', 'if=' + miniroot_fn, 'of=' + bootxx, 'conv=osync', 'count=16'])
             open(bootblock, 'w').close()
             spawn('installboot',['installboot', '-m amiga', '-o command="netbsd -Cc 4000"', bootblock, bootxx])
-            spawn('dd',['dd', 'if=' + bootblock, 'of=' + wd1_path, 'oseek=128', 'conv=osync,notrunc'])
-            subprocess.call('zcat ' + miniroot_fn + ' | dd of=' + self.wd0_path() + ' oseek=144' + ' skip=16' + ' conv=osync,notrunc', shell = True)
-        spawn('dd', ['dd', 'if=' + self.dist.iso_path(), 'of=' + wd1_path, ' oseek=896128' + ' conv=osync,notrunc'])
+            spawn('dd',['dd', 'if=' + bootblock, 'of=' + wd1_path, 'seek=128', 'conv=osync,notrunc'])
+            subprocess.call('zcat ' + miniroot_fn + ' | dd of=' + self.wd0_path() + ' seek=144' + ' skip=16' + ' conv=osync,notrunc', shell = True)
+        spawn('dd', ['dd', 'if=' + self.dist.iso_path(), 'of=' + wd1_path, 'seek=896128', 'conv=osync,notrunc'])
         vmm_args = ['wdcfile=rw,32,16,0,512,' + wd1_path]
         child = self.start_uae(vmm_args)
         loop = 0
